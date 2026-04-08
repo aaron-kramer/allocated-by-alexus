@@ -42,7 +42,7 @@ export default function IntroScreen({ onStart }) {
         </div>
 
         <div className="intro-title">
-          ALLOCATED<br />BY ALEXIS
+          ALLOCATED<br />BY ALEXUS
         </div>
 
         <TruckSVG />
