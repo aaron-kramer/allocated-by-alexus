@@ -1,152 +1,29 @@
 import React from 'react'
 
-export const TomatoSprite = ({size=44}) => (
-  <svg width={size} height={size} viewBox="0 0 48 48">
-    <ellipse cx="24" cy="43" rx="11" ry="3" fill="#00000050"/>
-    <circle cx="24" cy="28" r="14" fill="#7a1515" stroke="#1a1a2e" strokeWidth="1.5"/>
-    <circle cx="24" cy="28" r="13" fill="#c0392b"/>
-    <circle cx="24" cy="28" r="11" fill="#d44030"/>
-    <ellipse cx="19" cy="23" rx="5" ry="4" fill="#e74c3c" opacity="0.7"/>
-    <ellipse cx="29" cy="32" rx="3" ry="4" fill="#a93226" opacity="0.5"/>
-    <circle cx="17" cy="21" r="2.5" fill="white" opacity="0.7"/>
-    <circle cx="16" cy="20" r="1" fill="white" opacity="0.9"/>
-    <rect x="22.5" y="10" width="3" height="8" fill="#27ae60" stroke="#1a1a2e" strokeWidth="0.8" rx="1"/>
-    <path d="M15 15 Q24 8 33 15 Q24 20 15 15Z" fill="#2ecc71" stroke="#1a1a2e" strokeWidth="0.8"/>
-    <path d="M13 18 Q17 10 22 17" stroke="#27ae60" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
-    <path d="M26 17 Q31 10 35 18" stroke="#27ae60" strokeWidth="1.2" fill="none" strokeLinecap="round"/>
-  </svg>
+/* ── PNG-backed sprites (CC0 assets from OpenGameArt.org) ───────────────── */
+
+const Img = ({src, size, alt}) => (
+  <img src={src} width={size} height={size} alt={alt} draggable={false}
+    style={{imageRendering:'pixelated', display:'block'}} />
 )
 
-export const OnionSprite = ({size=44}) => (
-  <svg width={size} height={size} viewBox="0 0 48 48">
-    <ellipse cx="24" cy="43" rx="11" ry="3" fill="#00000050"/>
-    <ellipse cx="24" cy="30" rx="13" ry="12" fill="#6a2d5a" stroke="#1a1a2e" strokeWidth="1.5"/>
-    <ellipse cx="24" cy="30" rx="11" ry="10" fill="#9b3f8a"/>
-    <ellipse cx="24" cy="29" rx="9" ry="8" fill="#b54fa0"/>
-    <ellipse cx="19" cy="25" rx="4" ry="3" fill="#d060b8" opacity="0.6"/>
-    <circle cx="18" cy="24" r="1.5" fill="white" opacity="0.7"/>
-    <path d="M18 17 Q24 12 30 17" stroke="#8a2a70" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
-    <rect x="22" y="8" width="4" height="10" fill="#5a8a30" stroke="#1a1a2e" strokeWidth="0.8" rx="1"/>
-    <path d="M22 12 Q18 8 20 14" stroke="#4a7a28" strokeWidth="1" fill="none" strokeLinecap="round"/>
-    <path d="M26 12 Q30 8 28 14" stroke="#4a7a28" strokeWidth="1" fill="none" strokeLinecap="round"/>
-  </svg>
-)
+export const TomatoSprite       = ({size=44}) => <Img src="/sprites/tomato.png"          size={size} alt="Tomatoes" />
+export const OnionSprite        = ({size=44}) => <Img src="/sprites/onion.png"           size={size} alt="Onions" />
+export const LettuceSprite      = ({size=44}) => <Img src="/sprites/lettuce.png"         size={size} alt="Lettuce" />
+export const LemonSprite        = ({size=44}) => <Img src="/sprites/lemon.png"           size={size} alt="Lemons" />
+export const LimeSprite         = ({size=44}) => <Img src="/sprites/lime.png"            size={size} alt="Limes" />
+export const OrangeSprite       = ({size=44}) => <Img src="/sprites/orange.png"          size={size} alt="Oranges" />
+export const ChickenSprite      = ({size=44}) => <Img src="/sprites/chicken.png"         size={size} alt="Chicken" />
+export const FishSprite         = ({size=44}) => <Img src="/sprites/fish.png"            size={size} alt="Fish" />
+export const BeefBoxSprite      = ({size=44}) => <Img src="/sprites/beef_box.png"        size={size} alt="Beef Box" />
+export const FlourBagSprite     = ({size=44}) => <Img src="/sprites/flour.png"           size={size} alt="Flour" />
+export const RiceBagSprite      = ({size=44}) => <Img src="/sprites/rice.png"            size={size} alt="Rice" />
+export const PastaBoxSprite     = ({size=44}) => <Img src="/sprites/pasta.png"           size={size} alt="Pasta" />
+export const CannedTomatoesSprite = ({size=44}) => <Img src="/sprites/canned_tomatoes.png" size={size} alt="Canned Tomatoes" />
+export const LiquorBottleSprite = ({size=44}) => <Img src="/sprites/liquor_bottle.png"  size={size} alt="Liquor" />
+export const WineBottleSprite   = ({size=44}) => <Img src="/sprites/wine_bottle.png"    size={size} alt="Wine" />
 
-export const LettuceSprite = ({size=44}) => (
-  <svg width={size} height={size} viewBox="0 0 48 48">
-    <ellipse cx="24" cy="43" rx="12" ry="3" fill="#00000050"/>
-    <ellipse cx="24" cy="32" rx="16" ry="10" fill="#1a5c1a" stroke="#1a1a2e" strokeWidth="1.5"/>
-    <path d="M10 32 Q8 20 16 18 Q24 14 32 18 Q40 20 38 32 Q30 26 24 28 Q18 26 10 32Z" fill="#2a7a2a"/>
-    <path d="M14 28 Q10 18 18 16" stroke="#228B22" strokeWidth="1" fill="none" strokeLinecap="round"/>
-    <path d="M34 28 Q38 18 30 16" stroke="#228B22" strokeWidth="1" fill="none" strokeLinecap="round"/>
-    <path d="M24 28 Q22 16 24 14 Q26 16 24 28Z" fill="#3a9a3a"/>
-    <ellipse cx="20" cy="24" rx="5" ry="3" fill="#44aa44" opacity="0.6"/>
-    <circle cx="18" cy="23" r="1.5" fill="#88cc88" opacity="0.6"/>
-    <path d="M16 32 Q20 38 24 36 Q28 38 32 32" stroke="#1a4a1a" strokeWidth="1" fill="none"/>
-  </svg>
-)
-
-export const LemonSprite = ({size=44}) => (
-  <svg width={size} height={size} viewBox="0 0 48 48">
-    <ellipse cx="24" cy="43" rx="10" ry="3" fill="#00000050"/>
-    <ellipse cx="24" cy="28" rx="13" ry="11" fill="#8a7010" stroke="#1a1a2e" strokeWidth="1.5"/>
-    <ellipse cx="24" cy="28" rx="12" ry="10" fill="#d4a820"/>
-    <ellipse cx="24" cy="28" rx="10" ry="8" fill="#f0c030"/>
-    <ellipse cx="19" cy="24" rx="4" ry="3" fill="#f8d84a" opacity="0.7"/>
-    <circle cx="18" cy="23" r="1.5" fill="white" opacity="0.7"/>
-    <ellipse cx="35" cy="28" rx="4" ry="3" fill="#c8a020" opacity="0.4"/>
-    <path d="M36 26 Q40 24 38 28 Q40 32 36 30" fill="#8a7010" stroke="#1a1a2e" strokeWidth="0.8"/>
-    <path d="M12 26 Q8 24 10 28 Q8 32 12 30" fill="#8a7010" stroke="#1a1a2e" strokeWidth="0.8"/>
-  </svg>
-)
-
-export const LimeSprite = ({size=44}) => (
-  <svg width={size} height={size} viewBox="0 0 48 48">
-    <ellipse cx="24" cy="43" rx="10" ry="3" fill="#00000050"/>
-    <ellipse cx="24" cy="28" rx="12" ry="11" fill="#1a5a10" stroke="#1a1a2e" strokeWidth="1.5"/>
-    <ellipse cx="24" cy="28" rx="11" ry="10" fill="#2a8a20"/>
-    <ellipse cx="24" cy="28" rx="9" ry="8" fill="#3aaa30"/>
-    <ellipse cx="19" cy="24" rx="4" ry="3" fill="#4aca40" opacity="0.7"/>
-    <circle cx="18" cy="23" r="1.5" fill="white" opacity="0.6"/>
-    <path d="M35 26 Q39 24 37 28 Q39 32 35 30" fill="#1a5a10" stroke="#1a1a2e" strokeWidth="0.8"/>
-    <path d="M13 26 Q9 24 11 28 Q9 32 13 30" fill="#1a5a10" stroke="#1a1a2e" strokeWidth="0.8"/>
-  </svg>
-)
-
-export const OrangeSprite = ({size=44}) => (
-  <svg width={size} height={size} viewBox="0 0 48 48">
-    <ellipse cx="24" cy="43" rx="11" ry="3" fill="#00000050"/>
-    <circle cx="24" cy="28" r="14" fill="#7a3a08" stroke="#1a1a2e" strokeWidth="1.5"/>
-    <circle cx="24" cy="28" r="13" fill="#d46010"/>
-    <circle cx="24" cy="28" r="11" fill="#f07820"/>
-    <ellipse cx="19" cy="23" rx="5" ry="4" fill="#f89030" opacity="0.7"/>
-    <circle cx="17" cy="22" r="2" fill="white" opacity="0.7"/>
-    <circle cx="16" cy="21" r="0.8" fill="white"/>
-    <path d="M22 14 Q24 10 26 14" stroke="#5a8a30" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
-    <rect x="22.5" y="12" width="3" height="5" fill="#5a8a30" stroke="#1a1a2e" strokeWidth="0.8" rx="1"/>
-  </svg>
-)
-
-export const ChickenSprite = ({size=44}) => (
-  <svg width={size} height={size} viewBox="0 0 48 48">
-    <ellipse cx="24" cy="44" rx="14" ry="3" fill="#00000050"/>
-    <ellipse cx="24" cy="32" rx="15" ry="11" fill="#5a3010" stroke="#1a1a2e" strokeWidth="1.5"/>
-    <ellipse cx="24" cy="31" rx="14" ry="10" fill="#c87840"/>
-    <ellipse cx="24" cy="30" rx="12" ry="8" fill="#d8904a"/>
-    <ellipse cx="18" cy="26" rx="5" ry="4" fill="#e8a058" opacity="0.7"/>
-    <circle cx="16" cy="25" r="2" fill="white" opacity="0.5"/>
-    <path d="M18 40 Q20 44 24 42 Q28 44 30 40" fill="#c87840" stroke="#1a1a2e" strokeWidth="0.8"/>
-    <path d="M14 32 Q10 26 14 20 Q18 16 24 18" stroke="#a06030" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
-    <path d="M34 32 Q38 26 34 20 Q30 16 24 18" stroke="#a06030" strokeWidth="1.5" fill="none" strokeLinecap="round"/>
-    <ellipse cx="24" cy="18" rx="6" ry="5" fill="#d8904a" stroke="#1a1a2e" strokeWidth="1"/>
-    <circle cx="22" cy="16" r="1" fill="#1a1a2e"/>
-    <path d="M26 17 Q30 16 28 19" fill="#d44020" stroke="#1a1a2e" strokeWidth="0.5"/>
-  </svg>
-)
-
-export const FishSprite = ({size=44}) => (
-  <svg width={size} height={size} viewBox="0 0 48 48">
-    <ellipse cx="24" cy="43" rx="13" ry="3" fill="#00000050"/>
-    <path d="M8 28 Q16 20 28 24 Q38 22 42 28 Q38 34 28 32 Q16 36 8 28Z" fill="#1a3a5a" stroke="#1a1a2e" strokeWidth="1.5"/>
-    <path d="M10 28 Q18 22 28 26 Q36 24 40 28 Q36 32 28 30 Q18 34 10 28Z" fill="#2a5a8a"/>
-    <path d="M14 28 Q18 24 24 26 Q30 24 36 28 Q30 32 24 30 Q18 32 14 28Z" fill="#3a7aaa" opacity="0.8"/>
-    <ellipse cx="22" cy="27" rx="5" ry="3" fill="#4a9acc" opacity="0.6"/>
-    <circle cx="20" cy="26" r="1.5" fill="white" opacity="0.6"/>
-    <path d="M38 24 Q44 22 46 28 Q44 34 38 32Z" fill="#1a3a5a" stroke="#1a1a2e" strokeWidth="1"/>
-    <path d="M38 24 Q44 28 38 32Z" fill="#2a5a8a"/>
-    <circle cx="12" cy="27" r="2" fill="#1a2a3a"/>
-    <circle cx="11.5" cy="26.5" r="0.8" fill="white" opacity="0.7"/>
-    <path d="M16 24 Q20 22 24 24" stroke="#4a6a8a" strokeWidth="0.8" fill="none" opacity="0.6"/>
-    <path d="M16 31 Q20 33 24 31" stroke="#4a6a8a" strokeWidth="0.8" fill="none" opacity="0.6"/>
-  </svg>
-)
-
-export const BeefBoxSprite = ({size=44}) => (
-  <svg width={size} height={size} viewBox="0 0 48 48">
-    <ellipse cx="24" cy="44" rx="14" ry="3" fill="#00000050"/>
-    <rect x="6" y="16" width="36" height="28" rx="2" fill="#3a2a10" stroke="#1a1a2e" strokeWidth="1.5"/>
-    <rect x="6" y="16" width="36" height="28" rx="2" fill="#5a4020"/>
-    <rect x="8" y="18" width="32" height="24" rx="1" fill="#6a5030"/>
-    <rect x="6" y="16" width="36" height="8" rx="2" fill="#4a3018" stroke="#1a1a2e" strokeWidth="1"/>
-    <line x1="24" y1="16" x2="24" y2="44" stroke="#3a2010" strokeWidth="1.5" opacity="0.5"/>
-    <rect x="10" y="26" width="26" height="12" rx="1" fill="white" opacity="0.9"/>
-    <text x="23" y="33" textAnchor="middle" fontSize="5" fill="#cc2200" fontWeight="bold" fontFamily="monospace">BEEF</text>
-    <text x="23" y="36.5" textAnchor="middle" fontSize="3.5" fill="#444" fontFamily="monospace">KEEP COLD</text>
-    <path d="M18 30 L20 28 L22 30 L20 32Z" fill="#cc2200" opacity="0.8" transform="translate(4,2)"/>
-  </svg>
-)
-
-export const FlourBagSprite = ({size=44}) => (
-  <svg width={size} height={size} viewBox="0 0 48 48">
-    <ellipse cx="24" cy="44" rx="13" ry="3" fill="#00000050"/>
-    <path d="M14 36 Q12 20 16 12 Q24 8 32 12 Q36 20 34 36 Q30 42 24 42 Q18 42 14 36Z" fill="#c8b890" stroke="#1a1a2e" strokeWidth="1.5"/>
-    <path d="M15 36 Q13 21 17 13 Q24 9 31 13 Q35 21 33 36 Q29 41 24 41 Q19 41 15 36Z" fill="#e0d0a8"/>
-    <path d="M18 18 Q24 14 30 18 Q30 24 24 26 Q18 24 18 18Z" fill="#f0e0c0" opacity="0.6"/>
-    <ellipse cx="21" cy="19" rx="3" ry="2" fill="white" opacity="0.5"/>
-    <path d="M20 10 Q24 6 28 10 L28 13 Q24 11 20 13Z" fill="#b0a080" stroke="#1a1a2e" strokeWidth="1"/>
-    <text x="24" y="34" textAnchor="middle" fontSize="5" fill="#8a7a60" fontWeight="bold" fontFamily="monospace">FLOUR</text>
-  </svg>
-)
+/* ── SVG sprites (no suitable CC0 pixel-art equivalent found) ───────────── */
 
 export const SugarSprite = ({size=44}) => (
   <svg width={size} height={size} viewBox="0 0 48 48">
@@ -159,82 +36,6 @@ export const SugarSprite = ({size=44}) => (
     <text x="24" y="34" textAnchor="middle" fontSize="4" fill="#4a6acc" fontFamily="monospace">PURE CANE</text>
     <rect x="10" y="18" width="28" height="3" fill="#4060cc" opacity="0.6"/>
     <ellipse cx="20" cy="14" rx="3" ry="2" fill="#3a5acc" opacity="0.5"/>
-  </svg>
-)
-
-export const RiceBagSprite = ({size=44}) => (
-  <svg width={size} height={size} viewBox="0 0 48 48">
-    <ellipse cx="24" cy="44" rx="13" ry="3" fill="#00000050"/>
-    <path d="M13 38 Q11 22 15 12 Q24 8 33 12 Q37 22 35 38 Q30 44 24 44 Q18 44 13 38Z" fill="#8a8060" stroke="#1a1a2e" strokeWidth="1.5"/>
-    <path d="M14 38 Q12 23 16 13 Q24 9 32 13 Q36 23 34 38 Q29 43 24 43 Q19 43 14 38Z" fill="#c8c0a0"/>
-    <path d="M17 20 Q24 16 31 20 Q31 26 24 28 Q17 26 17 20Z" fill="#e0d8c0" opacity="0.6"/>
-    <ellipse cx="20" cy="21" rx="3" ry="2" fill="white" opacity="0.5"/>
-    <text x="24" y="36" textAnchor="middle" fontSize="5" fill="#6a6040" fontWeight="bold" fontFamily="monospace">RICE</text>
-    <path d="M20 10 Q24 7 28 10 L27 13 Q24 11 21 13Z" fill="#7a7060" stroke="#1a1a2e" strokeWidth="1"/>
-    <circle cx="24" cy="23" r="1" fill="white" opacity="0.7"/>
-    <circle cx="27" cy="25" r="0.8" fill="white" opacity="0.5"/>
-    <circle cx="21" cy="25" r="0.8" fill="white" opacity="0.5"/>
-  </svg>
-)
-
-export const PastaBoxSprite = ({size=44}) => (
-  <svg width={size} height={size} viewBox="0 0 48 48">
-    <ellipse cx="24" cy="44" rx="12" ry="3" fill="#00000050"/>
-    <rect x="11" y="8" width="26" height="36" rx="2" fill="#8a6a10" stroke="#1a1a2e" strokeWidth="1.5"/>
-    <rect x="11" y="8" width="26" height="36" rx="2" fill="#c89820"/>
-    <rect x="11" y="8" width="26" height="10" rx="2" fill="#a87810"/>
-    <rect x="13" y="20" width="22" height="20" rx="1" fill="#f8e880" opacity="0.9"/>
-    <text x="24" y="27" textAnchor="middle" fontSize="4.5" fill="#8a5010" fontWeight="bold" fontFamily="monospace">PASTA</text>
-    <text x="24" y="32" textAnchor="middle" fontSize="3.5" fill="#aa7030" fontFamily="monospace">RIGATONI</text>
-    <path d="M15 24 Q18 22 21 24 Q18 26 15 24Z" fill="#d4a820" opacity="0.6"/>
-    <path d="M17 14 Q24 12 31 14" stroke="#d4a020" strokeWidth="1.5" fill="none" opacity="0.6"/>
-  </svg>
-)
-
-export const CannedTomatoesSprite = ({size=44}) => (
-  <svg width={size} height={size} viewBox="0 0 48 48">
-    <ellipse cx="24" cy="44" rx="11" ry="3" fill="#00000050"/>
-    <rect x="13" y="8" width="22" height="36" rx="3" fill="#4a1010" stroke="#1a1a2e" strokeWidth="1.5"/>
-    <rect x="13" y="8" width="22" height="36" rx="3" fill="#aa2010"/>
-    <ellipse cx="24" cy="8" rx="11" ry="3" fill="#8a1808" stroke="#1a1a2e" strokeWidth="1"/>
-    <ellipse cx="24" cy="44" rx="11" ry="3" fill="#8a1808" stroke="#1a1a2e" strokeWidth="1"/>
-    <rect x="14" y="18" width="20" height="16" fill="white" opacity="0.95"/>
-    <text x="24" y="24" textAnchor="middle" fontSize="4" fill="#cc2200" fontWeight="bold" fontFamily="monospace">SAN MARZ</text>
-    <text x="24" y="29" textAnchor="middle" fontSize="3.5" fill="#aa1500" fontFamily="monospace">TOMATOES</text>
-    <ellipse cx="20" cy="12" rx="3" ry="1.5" fill="#cc2010" opacity="0.6"/>
-  </svg>
-)
-
-export const LiquorBottleSprite = ({size=44}) => (
-  <svg width={size} height={size} viewBox="0 0 48 48">
-    <ellipse cx="24" cy="44" rx="9" ry="3" fill="#00000050"/>
-    <rect x="18" y="34" width="12" height="10" rx="2" fill="#1a2810" stroke="#1a1a2e" strokeWidth="1.5"/>
-    <rect x="16" y="18" width="16" height="18" rx="3" fill="#1a2810" stroke="#1a1a2e" strokeWidth="1.5"/>
-    <rect x="18" y="34" width="12" height="10" rx="2" fill="#2a4018"/>
-    <rect x="16" y="18" width="16" height="18" rx="3" fill="#2a4018"/>
-    <rect x="17" y="19" width="14" height="16" rx="2" fill="#3a5828" opacity="0.8"/>
-    <rect x="19" y="23" width="10" height="9" fill="white" opacity="0.9"/>
-    <text x="24" y="28" textAnchor="middle" fontSize="4" fill="#2a4018" fontWeight="bold" fontFamily="monospace">RSVD</text>
-    <text x="24" y="31.5" textAnchor="middle" fontSize="3" fill="#4a6038" fontFamily="monospace">BOURBON</text>
-    <path d="M21 18 L21 12 Q24 10 27 12 L27 18" fill="#1a2810" stroke="#1a1a2e" strokeWidth="1.2"/>
-    <rect x="22" y="6" width="4" height="7" rx="1" fill="#4a3010" stroke="#1a1a2e" strokeWidth="1"/>
-    <ellipse cx="20" cy="22" rx="2" ry="1.5" fill="#5a8040" opacity="0.4"/>
-  </svg>
-)
-
-export const WineBottleSprite = ({size=44}) => (
-  <svg width={size} height={size} viewBox="0 0 48 48">
-    <ellipse cx="24" cy="44" rx="9" ry="3" fill="#00000050"/>
-    <rect x="18" y="28" width="12" height="16" rx="4" fill="#1a0830" stroke="#1a1a2e" strokeWidth="1.5"/>
-    <rect x="18" y="28" width="12" height="16" rx="4" fill="#2a1040"/>
-    <path d="M20 28 L18 18 Q18 14 24 14 Q30 14 30 18 L28 28" fill="#2a1040" stroke="#1a1a2e" strokeWidth="1.2"/>
-    <path d="M21 28 L19 19 Q19 15 24 15 Q29 15 29 19 L27 28" fill="#3a1855" opacity="0.8"/>
-    <rect x="8" y="0" width="32" height="5" rx="1" fill="white" opacity="0.9"/>
-    <rect x="19" y="32" width="10" height="9" fill="white" opacity="0.9"/>
-    <text x="24" y="37" textAnchor="middle" fontSize="4" fill="#1a0830" fontWeight="bold" fontFamily="monospace">ROUGE</text>
-    <text x="24" y="39.5" textAnchor="middle" fontSize="3" fill="#2a1040" fontFamily="monospace">2022</text>
-    <rect x="22" y="7" width="4" height="8" rx="1" fill="#3a1855" stroke="#1a1a2e" strokeWidth="1"/>
-    <ellipse cx="20" cy="31" rx="2" ry="1.5" fill="#5a2880" opacity="0.4"/>
   </svg>
 )
 
