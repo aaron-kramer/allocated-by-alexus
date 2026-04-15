@@ -1,6 +1,6 @@
 import React from 'react'
 import { LEVELS } from '../data/levels.js'
-import { ZONE_DEFS } from '../data/zones.js'
+import { RECIPES } from '../data/recipes.js'
 
 export default function LevelSelectScreen({ completedLevels, onSelectLevel, onBack }) {
   return (
@@ -43,6 +43,7 @@ export default function LevelSelectScreen({ completedLevels, onSelectLevel, onBa
       {LEVELS.map((level, i) => {
         const isCompleted = completedLevels.includes(level.id)
         const isLocked = i > 0 && !completedLevels.includes(LEVELS[i - 1].id)
+        const orderEmojis = level.orders.map(o => RECIPES[o.recipeId].emoji).join(' ')
         return (
           <div
             key={level.id}
@@ -55,11 +56,11 @@ export default function LevelSelectScreen({ completedLevels, onSelectLevel, onBa
             <div className="level-card-desc">{level.description}</div>
             <div style={{
               fontFamily: "'IBM Plex Mono', monospace",
-              fontSize: 10,
-              color: '#6a58a0',
-              marginTop: 6,
+              fontSize: 18,
+              marginTop: 8,
+              letterSpacing: 2,
             }}>
-              {level.zones.map((z) => ZONE_DEFS[z].shortName).join(' · ')}
+              {orderEmojis}
             </div>
             <div className="level-stars">
               {[1, 2, 3].map((s) => (

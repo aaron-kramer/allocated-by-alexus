@@ -48,7 +48,7 @@ export default function IntroScreen({ onStart }) {
         <TruckSVG />
 
         <div className="intro-subtitle">
-          Organize the delivery. Stock the restaurant.
+          Fill every order before service ends.
         </div>
 
         <div style={{
@@ -59,12 +59,13 @@ export default function IntroScreen({ onStart }) {
           lineHeight: 1.9,
           maxWidth: 300,
         }}>
-          Tap a crate to grab an item, then drop it in the correct zone.
-          Every item has a home. Stock it all before doors open!
+          Orders are coming in! Tap ingredients from the delivery
+          and they'll go straight to the right table. Serve everyone
+          before the shift ends!
         </div>
 
         <button className="glow-btn" onClick={handleStart}>
-          START SHIFT
+          START SERVICE
         </button>
 
         <div style={{

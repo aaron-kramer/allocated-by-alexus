@@ -26,7 +26,7 @@ export default function LevelCompleteScreen({ level, elapsedTime, onNext, onLeve
         maxWidth: 300,
         lineHeight: 1.7,
       }}>
-        Everything is stocked and in the right place. Doors open soon!
+        Every order filled and every table served. Amazing service tonight!
       </div>
       <div className="complete-stars">
         {[1, 2, 3].map((s) => (
@@ -35,8 +35,8 @@ export default function LevelCompleteScreen({ level, elapsedTime, onNext, onLeve
       </div>
       <div className="complete-stats">
         <div>TIME &nbsp;&nbsp;&nbsp;→ <span style={{ color: '#f5eeff' }}>{timeStr}</span></div>
-        <div>STOCKED → <span style={{ color: '#a0e8c4' }}>ALL ITEMS</span></div>
-        <div>RATING &nbsp;→ <span style={{ color: '#f0d4a8' }}>PERFECT SHIFT</span></div>
+        <div>SERVED &nbsp;→ <span style={{ color: '#a0e8c4' }}>ALL ORDERS</span></div>
+        <div>RATING &nbsp;→ <span style={{ color: '#f0d4a8' }}>PERFECT SERVICE</span></div>
       </div>
       <div className="complete-buttons">
         {hasNext && (

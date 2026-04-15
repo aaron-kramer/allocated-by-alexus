@@ -570,3 +570,171 @@ html, body {
   box-shadow: 0 4px 20px rgba(200,60,60,0.3);
 }
 .toast.success { background: rgba(40,160,100,0.92); }
+
+/* ============================
+   ORDER TICKET RAIL
+   ============================ */
+.tickets-area {
+  display: flex;
+  gap: 10px;
+  overflow-x: auto;
+  padding: 10px 12px;
+  flex-shrink: 0;
+  height: 210px;
+  background: #f0ebff;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-x;
+}
+.tickets-area::-webkit-scrollbar { height: 3px; }
+.tickets-area::-webkit-scrollbar-track { background: #f0ebff; }
+.tickets-area::-webkit-scrollbar-thumb { background: #d0b8e8; border-radius: 2px; }
+
+.order-ticket {
+  flex-shrink: 0;
+  width: 130px;
+  background: #ffffff;
+  border: 2px solid #d0b8e8;
+  border-radius: 12px;
+  padding: 10px 8px 8px;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 3px;
+  transition: border-color 0.3s, box-shadow 0.3s, opacity 0.4s;
+  box-shadow: 0 2px 8px rgba(120,60,180,0.1);
+  height: 188px;
+}
+.order-ticket.ticket-done {
+  border-color: #3a9870;
+  box-shadow: 0 0 14px rgba(58,152,112,0.22);
+  opacity: 0.6;
+}
+
+.ticket-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+}
+.ticket-table {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 9px;
+  font-weight: 700;
+  color: #8a78b0;
+  letter-spacing: 1px;
+}
+.ticket-check-badge {
+  font-size: 14px;
+  color: #3a9870;
+  font-weight: 700;
+}
+.ticket-emoji {
+  font-size: 30px;
+  line-height: 1;
+  margin: 2px 0;
+}
+.ticket-name {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 10px;
+  font-weight: 700;
+  color: #3a2060;
+  text-align: center;
+  line-height: 1.3;
+  min-height: 26px;
+}
+.ticket-slots {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 3px;
+  justify-content: center;
+  margin-top: 4px;
+}
+.ticket-slot {
+  width: 36px;
+  height: 36px;
+  border-radius: 8px;
+  border: 1.5px dashed rgba(100,60,160,0.25);
+  background: rgba(240,235,255,0.8);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  position: relative;
+  transition: border-color 0.2s, background 0.2s;
+}
+.ticket-slot.slot-filled {
+  border-style: solid;
+  border-color: rgba(58,152,112,0.5);
+  background: rgba(58,152,112,0.08);
+}
+.slot-checkmark {
+  position: absolute;
+  top: -7px;
+  right: -7px;
+  width: 15px;
+  height: 15px;
+  background: #3a9870;
+  border-radius: 50%;
+  color: white;
+  font-size: 8px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 700;
+  animation: thunk 0.3s cubic-bezier(0.36, 0.07, 0.19, 0.97);
+}
+
+/* ============================
+   INGREDIENT SHELF
+   ============================ */
+.shelf-area {
+  flex: 1;
+  overflow-y: auto;
+  padding: 10px 12px;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  align-content: flex-start;
+  background: #ffffff;
+  -webkit-overflow-scrolling: touch;
+  touch-action: pan-y;
+}
+.shelf-area::-webkit-scrollbar { width: 4px; }
+.shelf-area::-webkit-scrollbar-track { background: #ffffff; }
+.shelf-area::-webkit-scrollbar-thumb { background: #d8c0e8; border-radius: 2px; }
+
+.shelf-item {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 4px;
+  padding: 8px 6px 6px;
+  width: 78px;
+  min-height: 82px;
+  background: linear-gradient(145deg, #f8f0ff, #efe4ff);
+  border: 2px solid #c8a8f0;
+  border-radius: 12px;
+  cursor: pointer;
+  transition: transform 0.08s, box-shadow 0.08s;
+  touch-action: manipulation;
+  box-shadow: 0 2px 6px rgba(120,60,180,0.12);
+}
+.shelf-item:active { transform: scale(0.9); box-shadow: none; }
+.shelf-item-name {
+  font-family: 'IBM Plex Mono', monospace;
+  font-size: 8px;
+  color: #5840a0;
+  text-align: center;
+  line-height: 1.2;
+  font-weight: 600;
+}
+
+@keyframes shelf-pop {
+  0%   { transform: scale(1);    opacity: 1; }
+  40%  { transform: scale(1.3);  opacity: 0.9; }
+  100% { transform: scale(0.1);  opacity: 0; }
+}
+.shelf-pop {
+  animation: shelf-pop 0.22s cubic-bezier(0.36, 0.07, 0.19, 0.97) forwards;
+  pointer-events: none;
+}

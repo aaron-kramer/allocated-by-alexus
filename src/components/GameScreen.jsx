@@ -1,37 +1,95 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
-import { ZONE_DEFS } from '../data/zones.js'
-import { SPRITE_MAP } from '../data/items.js'
-import { getItemDef, getItemType } from '../data/levels.js'
+import { RECIPES } from '../data/recipes.js'
+import { SPRITE_MAP, ITEM_DEFS } from '../data/items.js'
 import {
   playPlaceSound, playErrorSound, playPickupSound,
-  playCrateSound, playHintSound,
 } from '../audio/audioSystem.js'
-import ZoneCard from './ZoneCard.jsx'
-import CrateCard from './CrateCard.jsx'
 import LevelCompleteScreen from './LevelCompleteScreen.jsx'
 import SparkleEffect from './SparkleEffect.jsx'
 import Toast from './Toast.jsx'
 import MuteButton from './MuteButton.jsx'
 
-export default function GameScreen({ level, levelIdx, onComplete, onBack, onNext, hasNext }) {
-  const [placedItems, setPlacedItems] = useState({})
-  const [heldItem, setHeldItem] = useState(null)
-  const [pointerPos, setPointerPos] = useState({ x: 0, y: 0 })
-  const [hintsActive, setHintsActive] = useState(false)
-  const [animations, setAnimations] = useState({})
+function buildPool(level) {
+  const pool = []
+  const counts = {}
+  for (const order of level.orders) {
+    const recipe = RECIPES[order.recipeId]
+    for (const itemType of recipe.items) {
+      const n = counts[itemType] || 0
+      pool.push({ id: `${itemType}_${n}`, type: itemType })
+      counts[itemType] = n + 1
+    }
+  }
+  return pool
+}
+
+function OrderTicketCard({ recipe, filled, isDone, tableNum }) {
+  const filledCounts = {}
+  for (const t of filled) filledCounts[t] = (filledCounts[t] || 0) + 1
+
+  const slots = []
+  const runningNeeds = {}
+  for (const itemType of recipe.items) {
+    const n = (runningNeeds[itemType] || 0) + 1
+    runningNeeds[itemType] = n
+    const got = filledCounts[itemType] || 0
+    slots.push({ itemType, isFilled: got >= n })
+  }
+
+  return (
+    <div className={`order-ticket${isDone ? ' ticket-done' : ''}`}>
+      <div className="ticket-header">
+        <span className="ticket-table">TABLE {tableNum}</span>
+        {isDone && <span className="ticket-check-badge">✓</span>}
+      </div>
+      <div className="ticket-emoji">{recipe.emoji}</div>
+      <div className="ticket-name">{recipe.name}</div>
+      <div className="ticket-slots">
+        {slots.map(({ itemType, isFilled }, idx) => {
+          const Sprite = SPRITE_MAP[itemType]
+          return (
+            <div key={idx} className={`ticket-slot${isFilled ? ' slot-filled' : ''}`}>
+              {Sprite && <Sprite size={26} />}
+              {isFilled && <div className="slot-checkmark">✓</div>}
+            </div>
+          )
+        })}
+      </div>
+    </div>
+  )
+}
+
+export default function GameScreen({ level, onComplete, onBack, onNext, hasNext }) {
+  const [filledSlots, setFilledSlots] = useState({})
+  const [shelfPool, setShelfPool] = useState(() => buildPool(level))
+  const [poppingItems, setPoppingItems] = useState(new Set())
   const [sparkles, setSparkles] = useState([])
   const [toast, setToast] = useState(null)
   const [elapsedTime, setElapsedTime] = useState(0)
-  const [currentCrateId, setCurrentCrateId] = useState(level.crates[0]?.id)
   const [levelComplete, setLevelComplete] = useState(false)
 
   const startTimeRef = useRef(Date.now())
-  const zoneRefs = useRef({})
   const timerRef = useRef(null)
   const toastTimerRef = useRef(null)
   const completedRef = useRef(false)
+  const filledSlotsRef = useRef(filledSlots)
+  filledSlotsRef.current = filledSlots
 
-  /* Timer */
+  // Derived: completed order ids
+  const completedOrderIds = useMemo(() => {
+    const done = new Set()
+    for (const order of level.orders) {
+      const recipe = RECIPES[order.recipeId]
+      const filled = filledSlots[order.id] || []
+      if (filled.length >= recipe.items.length) done.add(order.id)
+    }
+    return done
+  }, [filledSlots, level.orders])
+
+  const completedOrderIdsRef = useRef(completedOrderIds)
+  completedOrderIdsRef.current = completedOrderIds
+
+  // Timer
   useEffect(() => {
     timerRef.current = setInterval(() => {
       setElapsedTime(Math.floor((Date.now() - startTimeRef.current) / 1000))
@@ -39,18 +97,10 @@ export default function GameScreen({ level, levelIdx, onComplete, onBack, onNext
     return () => clearInterval(timerRef.current)
   }, [])
 
-  /* Derived: all item ids and placed set */
-  const allItemIds = useMemo(() => level.crates.flatMap((c) => c.items), [level])
-  const placedItemIdSet = useMemo(
-    () => new Set(Object.keys(placedItems).filter((k) => placedItems[k]?.valid)),
-    [placedItems]
-  )
-
-  /* Check level complete */
+  // Level complete check
   useEffect(() => {
     if (completedRef.current) return
-    const allPlaced = allItemIds.every((id) => placedItemIdSet.has(id))
-    if (allPlaced && allItemIds.length > 0) {
+    if (completedOrderIds.size === level.orders.length && level.orders.length > 0) {
       completedRef.current = true
       clearInterval(timerRef.current)
       setTimeout(() => {
@@ -58,146 +108,76 @@ export default function GameScreen({ level, levelIdx, onComplete, onBack, onNext
         onComplete(level.id)
       }, 600)
     }
-  }, [placedItemIdSet, allItemIds, onComplete, level.id])
+  }, [completedOrderIds, level.orders.length, onComplete, level.id])
 
-  /* Animation helper */
-  const triggerAnim = useCallback((itemId, animName) => {
-    setAnimations((prev) => ({ ...prev, [itemId]: animName }))
-    setTimeout(() => {
-      setAnimations((prev) => {
-        const n = { ...prev }
-        delete n[itemId]
-        return n
-      })
-    }, 600)
-  }, [])
-
-  /* Toast helper */
   const showToast = useCallback((msg, type = 'error') => {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
     setToast({ msg, type, id: Date.now() })
     toastTimerRef.current = setTimeout(() => setToast(null), 2000)
   }, [])
 
-  /* Pick up from a placed zone */
-  const handlePickupFromZone = useCallback((itemId, fromZone) => {
-    setHeldItem({ itemId, fromZone })
+  const handleShelfTap = useCallback((poolItem, e) => {
+    if (poppingItems.has(poolItem.id)) return
+
     playPickupSound()
-    setPlacedItems((prev) => {
-      const n = { ...prev }
-      delete n[itemId]
-      return n
-    })
-  }, [])
 
-  /* Pick up from crate */
-  const handlePickupFromCrate = useCallback((itemId) => {
-    if (placedItemIdSet.has(itemId)) return
-    setHeldItem({ itemId, fromCrate: currentCrateId })
-    playPickupSound()
-    playCrateSound()
-  }, [placedItemIdSet, currentCrateId])
+    const currentFilled = filledSlotsRef.current
+    const currentCompleted = completedOrderIdsRef.current
 
-  /* Pointer/touch move */
-  const handlePointerMove = useCallback((e) => {
-    if (!heldItem) return
-    const pt = e.touches ? e.touches[0] : e
-    setPointerPos({ x: pt.clientX, y: pt.clientY })
-  }, [heldItem])
-
-  /* Drop: find zone by hit test, validate, place or reject */
-  const handlePointerUp = useCallback((e) => {
-    if (!heldItem) return
-    const pt = e.changedTouches ? e.changedTouches[0] : e
-    const { clientX, clientY } = pt
-
-    let droppedZone = null
-    for (const [zoneId, ref] of Object.entries(zoneRefs.current)) {
-      if (!ref) continue
-      const rect = ref.getBoundingClientRect()
-      if (clientX >= rect.left && clientX <= rect.right && clientY >= rect.top && clientY <= rect.bottom) {
-        droppedZone = zoneId
+    // Find first unfilled order that needs this item type
+    let targetOrderId = null
+    for (const order of level.orders) {
+      if (currentCompleted.has(order.id)) continue
+      const recipe = RECIPES[order.recipeId]
+      const filled = currentFilled[order.id] || []
+      const needed = recipe.items.filter(x => x === poolItem.type).length
+      const got = filled.filter(x => x === poolItem.type).length
+      if (got < needed) {
+        targetOrderId = order.id
         break
       }
     }
 
-    if (droppedZone) {
-      const itemDef = getItemDef(heldItem.itemId)
-      const zoneDef = ZONE_DEFS[droppedZone]
-      const valid = zoneDef && itemDef && zoneDef.accepts.includes(itemDef.category)
-
-      if (valid) {
-        const itemsInZone = Object.values(placedItems).filter((v) => v.zoneId === droppedZone).length
-        if (itemsInZone >= zoneDef.capacity) {
-          showToast('Zone is full!')
-          playErrorSound()
-          if (heldItem.fromZone) {
-            setPlacedItems((prev) => ({ ...prev, [heldItem.itemId]: { zoneId: heldItem.fromZone, valid: true } }))
-          }
-        } else {
-          setPlacedItems((prev) => ({ ...prev, [heldItem.itemId]: { zoneId: droppedZone, valid: true } }))
-          triggerAnim(heldItem.itemId, 'item-thunk')
-          playPlaceSound()
-          setSparkles((prev) => [...prev, { id: Date.now(), x: clientX, y: clientY }])
-        }
-      } else {
-        playErrorSound()
-        showToast(itemDef ? `${itemDef.name} doesn't go there!` : 'Wrong zone!')
-        if (heldItem.fromZone) {
-          setPlacedItems((prev) => ({ ...prev, [heldItem.itemId]: { zoneId: heldItem.fromZone, valid: true } }))
-        }
-      }
-    } else {
-      // Dropped in empty space — return to zone if from one
-      if (heldItem.fromZone) {
-        setPlacedItems((prev) => ({ ...prev, [heldItem.itemId]: { zoneId: heldItem.fromZone, valid: true } }))
-      }
+    if (!targetOrderId) {
+      playErrorSound()
+      showToast('No order needs that right now!')
+      return
     }
 
-    setHeldItem(null)
-    setHintsActive(false)
-  }, [heldItem, placedItems, showToast, triggerAnim])
+    // Deliver to target order
+    setFilledSlots(prev => {
+      const filled = prev[targetOrderId] || []
+      return { ...prev, [targetOrderId]: [...filled, poolItem.type] }
+    })
 
-  /* Tap a crate to pull the next item */
-  const handleCrateTap = useCallback((crateId) => {
-    const crate = level.crates.find((c) => c.id === crateId)
-    if (!crate) return
-    const nextItem = crate.items.find((id) => !placedItemIdSet.has(id))
-    if (nextItem) {
-      setCurrentCrateId(crateId)
-      handlePickupFromCrate(nextItem)
-    } else {
-      const nextCrate = level.crates.find((c) => c.items.some((id) => !placedItemIdSet.has(id)))
-      if (nextCrate) setCurrentCrateId(nextCrate.id)
-    }
-  }, [level.crates, placedItemIdSet, handlePickupFromCrate])
+    // Sparkle at tap position
+    const pt = e.nativeEvent?.changedTouches?.[0] ?? e
+    setSparkles(prev => [...prev, { id: Date.now(), x: pt.clientX, y: pt.clientY }])
+    playPlaceSound()
 
-  /* Hint toggle */
-  const handleHint = useCallback(() => {
-    if (!heldItem) return
-    setHintsActive((v) => !v)
-    playHintSound()
-  }, [heldItem])
+    // Pop animation then remove from shelf
+    setPoppingItems(prev => new Set([...prev, poolItem.id]))
+    setTimeout(() => {
+      setShelfPool(prev => prev.filter(p => p.id !== poolItem.id))
+      setPoppingItems(prev => {
+        const n = new Set(prev)
+        n.delete(poolItem.id)
+        return n
+      })
+    }, 220)
+  }, [level.orders, poppingItems, showToast])
 
-  /* Display values */
   const minutes = Math.floor(elapsedTime / 60)
   const seconds = elapsedTime % 60
   const timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
-  const placedCount = placedItemIdSet.size
-  const totalCount = allItemIds.length
-  const HeldSprite = heldItem ? SPRITE_MAP[getItemType(heldItem.itemId)] : null
+  const doneOrders = completedOrderIds.size
+  const totalOrders = level.orders.length
 
   return (
-    <div
-      style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', overflow: 'hidden', touchAction: 'none' }}
-      onPointerMove={handlePointerMove}
-      onPointerUp={handlePointerUp}
-      onTouchMove={handlePointerMove}
-      onTouchEnd={handlePointerUp}
-    >
-      {/* ── HUD ─────────────────────────────────────────── */}
+    <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', overflow: 'hidden' }}>
+
+      {/* HUD */}
       <div className="hud">
-        {/* Back button + level name */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button
             onClick={onBack}
@@ -217,32 +197,20 @@ export default function GameScreen({ level, levelIdx, onComplete, onBack, onNext
           </div>
         </div>
 
-        {/* Item count */}
         <div className="hud-items">
           <div style={{ fontSize: 20, color: '#3a9870', fontWeight: 700 }}>
-            {placedCount}
-            <span style={{ color: '#a090c0', fontSize: 14 }}>/{totalCount}</span>
+            {doneOrders}<span style={{ color: '#a090c0', fontSize: 14 }}>/{totalOrders}</span>
           </div>
-          <div style={{ fontSize: 9, color: '#8070a8' }}>STOCKED</div>
+          <div style={{ fontSize: 9, color: '#8070a8' }}>SERVED</div>
         </div>
 
-        {/* Timer + Hint + Mute */}
         <div style={{ textAlign: 'right', display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 4 }}>
           <div className="hud-timer">{timeStr}</div>
-          <div style={{ display: 'flex', gap: 6, alignItems: 'center' }}>
-            <button
-              className={`hint-btn ${hintsActive ? 'active' : ''}`}
-              onClick={handleHint}
-              disabled={!heldItem}
-            >
-              HINT
-            </button>
-            <MuteButton />
-          </div>
+          <MuteButton />
         </div>
       </div>
 
-      {/* ── Objective banner ────────────────────────────── */}
+      {/* Instruction banner */}
       <div style={{
         padding: '7px 14px',
         background: 'rgba(196,140,220,0.07)',
@@ -252,93 +220,75 @@ export default function GameScreen({ level, levelIdx, onComplete, onBack, onNext
         color: '#6858a0',
         letterSpacing: '0.5px',
         flexShrink: 0,
-        display: 'flex',
-        alignItems: 'center',
-        gap: 8,
       }}>
         <span style={{ color: '#c060a0' }}>▸</span>
-        {heldItem
-          ? <span>Drop <strong style={{ color: '#2d1f4a' }}>{getItemDef(heldItem.itemId)?.name}</strong> in the correct zone — or tap HINT</span>
-          : <span>Tap a crate below to grab an item, then drop it in the right zone</span>
-        }
+        {shelfPool.length > 0
+          ? ' Tap an ingredient — it goes to the right order automatically!'
+          : ' All ingredients sent! Orders are being prepared...'}
       </div>
 
-      {/* ── Zones grid ──────────────────────────────────── */}
-      <div className="zones-area">
-        {level.zones.map((zoneId) => (
-          <ZoneCard
-            key={zoneId}
-            ref={(el) => { zoneRefs.current[zoneId] = el }}
-            zoneId={zoneId}
-            zoneDef={ZONE_DEFS[zoneId]}
-            placedItems={placedItems}
-            heldItem={heldItem}
-            hintsActive={hintsActive}
-            onPickupFromZone={handlePickupFromZone}
-            onItemAnim={(itemId) => animations[itemId] || ''}
-          />
-        ))}
-        <div style={{ height: 10, gridColumn: 'span 2' }} />
+      {/* Order ticket rail */}
+      <div className="tickets-area">
+        {level.orders.map((order, i) => {
+          const recipe = RECIPES[order.recipeId]
+          const filled = filledSlots[order.id] || []
+          const isDone = completedOrderIds.has(order.id)
+          return (
+            <OrderTicketCard
+              key={order.id}
+              recipe={recipe}
+              filled={filled}
+              isDone={isDone}
+              tableNum={i + 1}
+            />
+          )
+        })}
       </div>
 
-      {/* ── Crate area ──────────────────────────────────── */}
-      <div className="crate-area">
-        <div style={{
-          fontFamily: "'IBM Plex Mono', monospace",
-          fontSize: 11,
-          color: '#6a4880',
-          letterSpacing: '2px',
-          marginBottom: 8,
-          display: 'flex',
-          justifyContent: 'space-between',
-          alignItems: 'center',
-        }}>
-          <span>📦 DELIVERY CRATES</span>
-          {heldItem
-            ? <span style={{ color: '#c060a0', fontWeight: 700 }}>✋ {getItemDef(heldItem.itemId)?.name}</span>
-            : <span style={{ color: '#a090c0', fontSize: 10 }}>tap to grab an item</span>
-          }
-        </div>
-        <div className="crate-scroll">
-          {level.crates.map((crate) => {
-            const isCurrent = crate.id === currentCrateId
-            const isDone = crate.items.every((id) => placedItemIdSet.has(id))
-            return (
-              <CrateCard
-                key={crate.id}
-                crate={crate}
-                isCurrent={isCurrent}
-                isDone={isDone}
-                placedItemIds={placedItemIdSet}
-                onOpenCrate={handleCrateTap}
-              />
-            )
-          })}
-        </div>
+      {/* Shelf label */}
+      <div style={{
+        padding: '8px 14px 4px',
+        fontFamily: "'IBM Plex Mono', monospace",
+        fontSize: 11,
+        color: '#6a4880',
+        letterSpacing: '2px',
+        background: '#ffffff',
+        borderTop: '2px solid rgba(196,150,210,0.25)',
+        flexShrink: 0,
+      }}>
+        📦 DELIVERY · {shelfPool.length} ingredient{shelfPool.length !== 1 ? 's' : ''} remaining
       </div>
 
-      {/* ── Floating held item ──────────────────────────── */}
-      {heldItem && HeldSprite && (
-        <div className="held-item" style={{ left: pointerPos.x, top: pointerPos.y }}>
-          <HeldSprite size={54} />
-        </div>
-      )}
+      {/* Ingredient shelf */}
+      <div className="shelf-area">
+        {shelfPool.map((poolItem) => {
+          const Sprite = SPRITE_MAP[poolItem.type]
+          const def = ITEM_DEFS[poolItem.type]
+          const isPopping = poppingItems.has(poolItem.id)
+          return (
+            <button
+              key={poolItem.id}
+              className={`shelf-item${isPopping ? ' shelf-pop' : ''}`}
+              onPointerDown={(e) => handleShelfTap(poolItem, e)}
+            >
+              {Sprite && <Sprite size={38} />}
+              <div className="shelf-item-name">{def?.name}</div>
+            </button>
+          )
+        })}
+      </div>
 
-      {/* ── Sparkle effects ─────────────────────────────── */}
-      {sparkles.map((s) => (
+      {sparkles.map(s => (
         <SparkleEffect
           key={s.id}
           x={s.x}
           y={s.y}
-          onDone={() => setSparkles((prev) => prev.filter((p) => p.id !== s.id))}
+          onDone={() => setSparkles(prev => prev.filter(p => p.id !== s.id))}
         />
       ))}
 
-      {/* ── Toast messages ──────────────────────────────── */}
       {toast && <Toast message={toast.msg} type={toast.type} id={toast.id} />}
 
-
-      {/* ── Level complete overlay ──────────────────────── */}
       {levelComplete && (
         <LevelCompleteScreen
           level={level}
