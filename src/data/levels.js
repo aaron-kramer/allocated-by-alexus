@@ -5,6 +5,7 @@ export const LEVELS = [
     title: 'Monday Lunch Rush',
     subtitle: 'Kitchen Only — Tutorial',
     description: '4 orders · 9 ingredients',
+    tileTypes: ['produce', 'protein', 'dry_goods'],
     orders: [
       { id: 't1', recipeId: 'caesar_salad' },
       { id: 't2', recipeId: 'tomato_soup' },
@@ -18,6 +19,7 @@ export const LEVELS = [
     title: 'Wednesday Dinner',
     subtitle: 'Kitchen + Bar',
     description: '6 orders · 12 ingredients',
+    tileTypes: ['produce', 'protein', 'dry_goods', 'liquor'],
     orders: [
       { id: 't1', recipeId: 'chicken_plate' },
       { id: 't2', recipeId: 'rice_bowl' },
@@ -33,6 +35,7 @@ export const LEVELS = [
     title: 'Friday Night Rush',
     subtitle: 'Full House',
     description: '8 orders · 18 ingredients',
+    tileTypes: ['produce', 'protein', 'dry_goods', 'liquor'],
     orders: [
       { id: 't1', recipeId: 'beef_tacos' },
       { id: 't2', recipeId: 'citrus_cocktail' },

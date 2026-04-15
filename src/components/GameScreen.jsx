@@ -1,6 +1,5 @@
 import React, { useState, useEffect, useRef, useCallback, useMemo } from 'react'
 import { RECIPES } from '../data/recipes.js'
-import { SPRITE_MAP, ITEM_DEFS } from '../data/items.js'
 import {
   playPlaceSound, playErrorSound, playPickupSound,
 } from '../audio/audioSystem.js'
@@ -9,31 +8,133 @@ import SparkleEffect from './SparkleEffect.jsx'
 import Toast from './Toast.jsx'
 import MuteButton from './MuteButton.jsx'
 
-function buildPool(level) {
-  const pool = []
-  const counts = {}
-  for (const order of level.orders) {
-    const recipe = RECIPES[order.recipeId]
-    for (const itemType of recipe.items) {
-      const n = counts[itemType] || 0
-      pool.push({ id: `${itemType}_${n}`, type: itemType })
-      counts[itemType] = n + 1
-    }
-  }
-  return pool
+// ─── Grid constants ────────────────────────────────────────────────────────────
+const COLS = 6
+const ROWS = 7
+
+// ─── Category appearance ───────────────────────────────────────────────────────
+const CATEGORY_COLOR = {
+  produce:   '#44b872',
+  protein:   '#e25040',
+  dry_goods: '#d09048',
+  liquor:    '#8848c8',
+}
+const CATEGORY_EMOJI = {
+  produce:   '🥦',
+  protein:   '🍖',
+  dry_goods: '🥫',
+  liquor:    '🍾',
+}
+const CATEGORY_LABEL = {
+  produce:   'Produce',
+  protein:   'Protein',
+  dry_goods: 'Dry Goods',
+  liquor:    'Liquor',
 }
 
+// ─── Utility ───────────────────────────────────────────────────────────────────
+function delay(ms) { return new Promise(r => setTimeout(r, ms)) }
+
+let tileIdCounter = 0
+function makeTile(category) {
+  return { id: `t${tileIdCounter++}`, category }
+}
+
+// Build initial grid with no pre-existing matches
+function buildGridNoMatches(rows, cols, tileTypes) {
+  const grid = []
+  for (let r = 0; r < rows; r++) {
+    grid.push([])
+    for (let c = 0; c < cols; c++) {
+      // Shuffle tileTypes and pick the first that doesn't create a 3-match
+      const shuffled = [...tileTypes].sort(() => Math.random() - 0.5)
+      let chosen = shuffled[0]
+      for (const cat of shuffled) {
+        const h2 = c >= 2 && grid[r][c - 1].category === cat && grid[r][c - 2].category === cat
+        const v2 = r >= 2 && grid[r - 1][c].category === cat && grid[r - 2][c].category === cat
+        if (!h2 && !v2) { chosen = cat; break }
+      }
+      grid[r].push(makeTile(chosen))
+    }
+  }
+  return grid
+}
+
+// Find all horizontal + vertical match-3+ positions, returned as Set of "r,c"
+function findMatches(grid) {
+  const rows = grid.length
+  const cols = grid[0].length
+  const matched = new Set()
+
+  // Horizontal runs
+  for (let r = 0; r < rows; r++) {
+    let c = 0
+    while (c < cols) {
+      const cat = grid[r][c]?.category
+      if (!cat) { c++; continue }
+      let end = c + 1
+      while (end < cols && grid[r][end]?.category === cat) end++
+      if (end - c >= 3) {
+        for (let i = c; i < end; i++) matched.add(`${r},${i}`)
+      }
+      c = end
+    }
+  }
+
+  // Vertical runs
+  for (let c = 0; c < cols; c++) {
+    let r = 0
+    while (r < rows) {
+      const cat = grid[r][c]?.category
+      if (!cat) { r++; continue }
+      let end = r + 1
+      while (end < rows && grid[end][c]?.category === cat) end++
+      if (end - r >= 3) {
+        for (let i = r; i < end; i++) matched.add(`${i},${c}`)
+      }
+      r = end
+    }
+  }
+
+  return matched
+}
+
+// Drop tiles down to fill gaps (null cells)
+function applyGravity(grid) {
+  const rows = grid.length
+  const cols = grid[0].length
+  const newGrid = grid.map(row => [...row])
+  for (let c = 0; c < cols; c++) {
+    const tiles = []
+    for (let r = rows - 1; r >= 0; r--) {
+      if (newGrid[r][c] !== null) tiles.push(newGrid[r][c])
+    }
+    for (let r = rows - 1; r >= 0; r--) {
+      newGrid[r][c] = tiles.shift() ?? null
+    }
+  }
+  return newGrid
+}
+
+// Replace null cells with new random tiles
+function fillNulls(grid, tileTypes) {
+  return grid.map(row =>
+    row.map(cell => cell === null ? makeTile(tileTypes[Math.floor(Math.random() * tileTypes.length)]) : cell)
+  )
+}
+
+// ─── Ticket card ───────────────────────────────────────────────────────────────
 function OrderTicketCard({ recipe, filled, isDone, tableNum }) {
   const filledCounts = {}
-  for (const t of filled) filledCounts[t] = (filledCounts[t] || 0) + 1
+  for (const cat of filled) filledCounts[cat] = (filledCounts[cat] || 0) + 1
 
   const slots = []
   const runningNeeds = {}
-  for (const itemType of recipe.items) {
-    const n = (runningNeeds[itemType] || 0) + 1
-    runningNeeds[itemType] = n
-    const got = filledCounts[itemType] || 0
-    slots.push({ itemType, isFilled: got >= n })
+  for (const cat of recipe.items) {
+    const n = (runningNeeds[cat] || 0) + 1
+    runningNeeds[cat] = n
+    const got = filledCounts[cat] || 0
+    slots.push({ cat, isFilled: got >= n })
   }
 
   return (
@@ -45,11 +146,20 @@ function OrderTicketCard({ recipe, filled, isDone, tableNum }) {
       <div className="ticket-emoji">{recipe.emoji}</div>
       <div className="ticket-name">{recipe.name}</div>
       <div className="ticket-slots">
-        {slots.map(({ itemType, isFilled }, idx) => {
-          const Sprite = SPRITE_MAP[itemType]
+        {slots.map(({ cat, isFilled }, idx) => {
+          const color = CATEGORY_COLOR[cat]
           return (
-            <div key={idx} className={`ticket-slot${isFilled ? ' slot-filled' : ''}`}>
-              {Sprite && <Sprite size={26} />}
+            <div
+              key={idx}
+              className={`ticket-slot${isFilled ? ' slot-filled' : ''}`}
+              style={!isFilled ? {
+                background: `${color}18`,
+                borderColor: `${color}66`,
+              } : undefined}
+            >
+              <span style={{ fontSize: 18, lineHeight: 1, opacity: isFilled ? 0.35 : 1 }}>
+                {CATEGORY_EMOJI[cat]}
+              </span>
               {isFilled && <div className="slot-checkmark">✓</div>}
             </div>
           )
@@ -59,23 +169,57 @@ function OrderTicketCard({ recipe, filled, isDone, tableNum }) {
   )
 }
 
+// ─── Main game screen ──────────────────────────────────────────────────────────
 export default function GameScreen({ level, onComplete, onBack, onNext, hasNext }) {
+  const { tileTypes } = level
+
+  const [grid, setGrid] = useState(() => buildGridNoMatches(ROWS, COLS, tileTypes))
+  const [selected, setSelected] = useState(null)       // { row, col } | null
+  const [matchedCells, setMatchedCells] = useState(new Set())
+  const [processing, setProcessing] = useState(false)
   const [filledSlots, setFilledSlots] = useState({})
-  const [shelfPool, setShelfPool] = useState(() => buildPool(level))
-  const [poppingItems, setPoppingItems] = useState(new Set())
   const [sparkles, setSparkles] = useState([])
   const [toast, setToast] = useState(null)
   const [elapsedTime, setElapsedTime] = useState(0)
   const [levelComplete, setLevelComplete] = useState(false)
+  const [tileSize, setTileSize] = useState(48)
 
+  // Stable refs for async callbacks
+  const gridRef = useRef(grid)
+  gridRef.current = grid
+  const processingRef = useRef(false)
+  const completedRef = useRef(false)
   const startTimeRef = useRef(Date.now())
   const timerRef = useRef(null)
   const toastTimerRef = useRef(null)
-  const completedRef = useRef(false)
-  const filledSlotsRef = useRef(filledSlots)
-  filledSlotsRef.current = filledSlots
+  const gridAreaRef = useRef(null)
 
-  // Derived: completed order ids
+  // Timer
+  useEffect(() => {
+    timerRef.current = setInterval(() => {
+      setElapsedTime(Math.floor((Date.now() - startTimeRef.current) / 1000))
+    }, 1000)
+    return () => clearInterval(timerRef.current)
+  }, [])
+
+  // Compute tile size to fill available grid area
+  useEffect(() => {
+    const update = () => {
+      if (!gridAreaRef.current) return
+      const { width, height } = gridAreaRef.current.getBoundingClientRect()
+      const gap = 4
+      const pad = 10
+      const maxByW = Math.floor((width  - pad * 2 - gap * (COLS - 1)) / COLS)
+      const maxByH = Math.floor((height - pad * 2 - gap * (ROWS - 1)) / ROWS)
+      setTileSize(Math.min(maxByW, maxByH, 60))
+    }
+    // Run after paint so the container has its real size
+    const id = requestAnimationFrame(update)
+    window.addEventListener('resize', update)
+    return () => { cancelAnimationFrame(id); window.removeEventListener('resize', update) }
+  }, [])
+
+  // Derive completed orders
   const completedOrderIds = useMemo(() => {
     const done = new Set()
     for (const order of level.orders) {
@@ -86,18 +230,7 @@ export default function GameScreen({ level, onComplete, onBack, onNext, hasNext 
     return done
   }, [filledSlots, level.orders])
 
-  const completedOrderIdsRef = useRef(completedOrderIds)
-  completedOrderIdsRef.current = completedOrderIds
-
-  // Timer
-  useEffect(() => {
-    timerRef.current = setInterval(() => {
-      setElapsedTime(Math.floor((Date.now() - startTimeRef.current) / 1000))
-    }, 1000)
-    return () => clearInterval(timerRef.current)
-  }, [])
-
-  // Level complete check
+  // Level complete trigger
   useEffect(() => {
     if (completedRef.current) return
     if (completedOrderIds.size === level.orders.length && level.orders.length > 0) {
@@ -110,68 +243,147 @@ export default function GameScreen({ level, onComplete, onBack, onNext, hasNext 
     }
   }, [completedOrderIds, level.orders.length, onComplete, level.id])
 
+  // Toast helper
   const showToast = useCallback((msg, type = 'error') => {
     if (toastTimerRef.current) clearTimeout(toastTimerRef.current)
     setToast({ msg, type, id: Date.now() })
     toastTimerRef.current = setTimeout(() => setToast(null), 2000)
   }, [])
 
-  const handleShelfTap = useCallback((poolItem, e) => {
-    if (poppingItems.has(poolItem.id)) return
-
-    playPickupSound()
-
-    const currentFilled = filledSlotsRef.current
-    const currentCompleted = completedOrderIdsRef.current
-
-    // Find first unfilled order that needs this item type
-    let targetOrderId = null
-    for (const order of level.orders) {
-      if (currentCompleted.has(order.id)) continue
-      const recipe = RECIPES[order.recipeId]
-      const filled = currentFilled[order.id] || []
-      const needed = recipe.items.filter(x => x === poolItem.type).length
-      const got = filled.filter(x => x === poolItem.type).length
-      if (got < needed) {
-        targetOrderId = order.id
-        break
-      }
+  // Route matched categories to orders (functional update — always latest state)
+  const deliverMatches = useCallback((matches, currentGrid) => {
+    const categoryCounts = {}
+    for (const key of matches) {
+      const [r, c] = key.split(',').map(Number)
+      const cat = currentGrid[r][c]?.category
+      if (cat) categoryCounts[cat] = (categoryCounts[cat] || 0) + 1
     }
 
-    if (!targetOrderId) {
-      playErrorSound()
-      showToast('No order needs that right now!')
+    setFilledSlots(prev => {
+      let updated = { ...prev }
+      for (const [cat, totalCount] of Object.entries(categoryCounts)) {
+        let remaining = totalCount
+        for (const order of level.orders) {
+          if (remaining === 0) break
+          const recipe = RECIPES[order.recipeId]
+          const filled = updated[order.id] || []
+          if (filled.length >= recipe.items.length) continue // already done
+          const needed = recipe.items.filter(x => x === cat).length
+          const got    = filled.filter(x => x === cat).length
+          const canDeliver = Math.min(needed - got, remaining)
+          if (canDeliver > 0) {
+            updated = { ...updated, [order.id]: [...filled, ...Array(canDeliver).fill(cat)] }
+            remaining -= canDeliver
+          }
+        }
+      }
+      return updated
+    })
+  }, [level.orders])
+
+  // Cascade: find matches → deliver → clear → gravity → fill → repeat
+  const processMatchCascade = useCallback(async (startGrid) => {
+    setProcessing(true)
+    processingRef.current = true
+    let g = startGrid
+
+    while (true) {
+      const matches = findMatches(g)
+      if (matches.size === 0) break
+
+      setMatchedCells(new Set(matches))
+      playPlaceSound()
+      await delay(300)
+
+      deliverMatches(matches, g)
+
+      const cleared = g.map((row, r) =>
+        row.map((cell, c) => (matches.has(`${r},${c}`) ? null : cell))
+      )
+      const afterGravity = applyGravity(cleared)
+      setMatchedCells(new Set())
+      setGrid(afterGravity)
+      await delay(180)
+
+      const filled = fillNulls(afterGravity, tileTypes)
+      setGrid(filled)
+      await delay(150)
+
+      g = filled
+    }
+
+    setProcessing(false)
+    processingRef.current = false
+  }, [deliverMatches, tileTypes])
+
+  // Tile tap handler
+  const handleTileTap = useCallback(async (row, col, e) => {
+    if (processingRef.current) return
+
+    // First tap → select
+    if (!selected) {
+      playPickupSound()
+      setSelected({ row, col })
       return
     }
 
-    // Deliver to target order
-    setFilledSlots(prev => {
-      const filled = prev[targetOrderId] || []
-      return { ...prev, [targetOrderId]: [...filled, poolItem.type] }
-    })
+    // Tap same tile → deselect
+    if (selected.row === row && selected.col === col) {
+      setSelected(null)
+      return
+    }
 
-    // Sparkle at tap position
+    const dr = Math.abs(selected.row - row)
+    const dc = Math.abs(selected.col - col)
+
+    // Non-adjacent → move selection
+    if (dr + dc !== 1) {
+      playPickupSound()
+      setSelected({ row, col })
+      return
+    }
+
+    // Adjacent → attempt swap
+    const selRow = selected.row
+    const selCol = selected.col
+    setSelected(null)
+    processingRef.current = true
+    setProcessing(true)
+
+    const originalGrid = gridRef.current
+    const swapped = originalGrid.map(r => [...r])
+    const tmp = swapped[selRow][selCol]
+    swapped[selRow][selCol] = swapped[row][col]
+    swapped[row][col] = tmp
+    setGrid(swapped)
+
     const pt = e.nativeEvent?.changedTouches?.[0] ?? e
     setSparkles(prev => [...prev, { id: Date.now(), x: pt.clientX, y: pt.clientY }])
-    playPlaceSound()
 
-    // Pop animation then remove from shelf
-    setPoppingItems(prev => new Set([...prev, poolItem.id]))
-    setTimeout(() => {
-      setShelfPool(prev => prev.filter(p => p.id !== poolItem.id))
-      setPoppingItems(prev => {
-        const n = new Set(prev)
-        n.delete(poolItem.id)
-        return n
-      })
-    }, 220)
-  }, [level.orders, poppingItems, showToast])
+    await delay(110)
 
+    const matches = findMatches(swapped)
+    if (matches.size === 0) {
+      playErrorSound()
+      setGrid(originalGrid)
+      processingRef.current = false
+      setProcessing(false)
+      showToast('No match!')
+      return
+    }
+
+    await processMatchCascade(swapped)
+  }, [selected, processMatchCascade, showToast])
+
+  // ── Render ──────────────────────────────────────────────────────────────────
   const minutes = Math.floor(elapsedTime / 60)
   const seconds = elapsedTime % 60
   const timeStr = `${String(minutes).padStart(2, '0')}:${String(seconds).padStart(2, '0')}`
-  const doneOrders = completedOrderIds.size
+  const doneOrders  = completedOrderIds.size
   const totalOrders = level.orders.length
+
+  const gridWidth  = COLS * tileSize + (COLS - 1) * 4
+  const gridHeight = ROWS * tileSize + (ROWS - 1) * 4
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: '100%', width: '100%', overflow: 'hidden' }}>
@@ -181,19 +393,11 @@ export default function GameScreen({ level, onComplete, onBack, onNext, hasNext 
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
           <button
             onClick={onBack}
-            style={{
-              background: 'none', border: 'none',
-              color: '#8a78b0', fontSize: 20, cursor: 'pointer',
-              padding: '4px 6px', touchAction: 'manipulation',
-            }}
-          >
-            ←
-          </button>
+            style={{ background: 'none', border: 'none', color: '#8a78b0', fontSize: 20, cursor: 'pointer', padding: '4px 6px', touchAction: 'manipulation' }}
+          >←</button>
           <div>
             <div className="hud-level">{level.day}</div>
-            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: '#6a58a0', marginTop: 1 }}>
-              {level.title}
-            </div>
+            <div style={{ fontFamily: "'IBM Plex Mono', monospace", fontSize: 9, color: '#6a58a0', marginTop: 1 }}>{level.title}</div>
           </div>
         </div>
 
@@ -208,23 +412,6 @@ export default function GameScreen({ level, onComplete, onBack, onNext, hasNext 
           <div className="hud-timer">{timeStr}</div>
           <MuteButton />
         </div>
-      </div>
-
-      {/* Instruction banner */}
-      <div style={{
-        padding: '7px 14px',
-        background: 'rgba(196,140,220,0.07)',
-        borderBottom: '1px solid rgba(196,140,220,0.18)',
-        fontFamily: "'IBM Plex Mono', monospace",
-        fontSize: 12,
-        color: '#6858a0',
-        letterSpacing: '0.5px',
-        flexShrink: 0,
-      }}>
-        <span style={{ color: '#c060a0' }}>▸</span>
-        {shelfPool.length > 0
-          ? ' Tap an ingredient — it goes to the right order automatically!'
-          : ' All ingredients sent! Orders are being prepared...'}
       </div>
 
       {/* Order ticket rail */}
@@ -245,37 +432,101 @@ export default function GameScreen({ level, onComplete, onBack, onNext, hasNext 
         })}
       </div>
 
-      {/* Shelf label */}
+      {/* Category legend / status bar */}
       <div style={{
-        padding: '8px 14px 4px',
-        fontFamily: "'IBM Plex Mono', monospace",
-        fontSize: 11,
-        color: '#6a4880',
-        letterSpacing: '2px',
-        background: '#ffffff',
-        borderTop: '2px solid rgba(196,150,210,0.25)',
+        display: 'flex', alignItems: 'center', gap: 8,
+        padding: '5px 12px',
+        background: '#faf8ff',
+        borderTop: '1px solid rgba(196,140,220,0.15)',
+        borderBottom: '1px solid rgba(196,140,220,0.15)',
         flexShrink: 0,
+        flexWrap: 'wrap',
       }}>
-        📦 DELIVERY · {shelfPool.length} ingredient{shelfPool.length !== 1 ? 's' : ''} remaining
+        {tileTypes.map(cat => (
+          <div key={cat} style={{ display: 'flex', alignItems: 'center', gap: 3 }}>
+            <div style={{ width: 13, height: 13, borderRadius: 3, background: CATEGORY_COLOR[cat], flexShrink: 0 }} />
+            <span style={{ fontSize: 10, color: '#6858a0', fontFamily: "'IBM Plex Mono', monospace" }}>
+              {CATEGORY_LABEL[cat]}
+            </span>
+          </div>
+        ))}
+        <div style={{ marginLeft: 'auto', fontSize: 10, fontFamily: "'IBM Plex Mono', monospace", color: processing ? '#c060a0' : '#a090c0' }}>
+          {processing ? 'matching…' : selected ? '▸ tap adjacent' : '▸ tap a tile'}
+        </div>
       </div>
 
-      {/* Ingredient shelf */}
-      <div className="shelf-area">
-        {shelfPool.map((poolItem) => {
-          const Sprite = SPRITE_MAP[poolItem.type]
-          const def = ITEM_DEFS[poolItem.type]
-          const isPopping = poppingItems.has(poolItem.id)
-          return (
-            <button
-              key={poolItem.id}
-              className={`shelf-item${isPopping ? ' shelf-pop' : ''}`}
-              onPointerDown={(e) => handleShelfTap(poolItem, e)}
-            >
-              {Sprite && <Sprite size={38} />}
-              <div className="shelf-item-name">{def?.name}</div>
-            </button>
-          )
-        })}
+      {/* Match-three grid */}
+      <div
+        ref={gridAreaRef}
+        style={{
+          flex: 1,
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'center',
+          background: '#f0ebff',
+          overflow: 'hidden',
+          padding: 10,
+        }}
+      >
+        <div style={{
+          display: 'grid',
+          gridTemplateColumns: `repeat(${COLS}, ${tileSize}px)`,
+          gridTemplateRows:    `repeat(${ROWS}, ${tileSize}px)`,
+          gap: 4,
+          width: gridWidth,
+          height: gridHeight,
+        }}>
+          {grid.map((row, r) =>
+            row.map((cell, c) => {
+              const key      = `${r},${c}`
+              const isSelected = selected?.row === r && selected?.col === c
+              const isMatched  = matchedCells.has(key)
+              const color      = CATEGORY_COLOR[cell?.category] ?? '#ccc'
+              const radius     = Math.max(6, Math.round(tileSize * 0.18))
+
+              return (
+                <div
+                  key={cell?.id ?? key}
+                  onPointerDown={(e) => handleTileTap(r, c, e)}
+                  style={{
+                    width: tileSize,
+                    height: tileSize,
+                    borderRadius: radius,
+                    background: isMatched
+                      ? color
+                      : `linear-gradient(145deg, ${color}ee, ${color}99)`,
+                    border: isSelected
+                      ? `3px solid #fff`
+                      : `2px solid ${color}55`,
+                    boxShadow: isSelected
+                      ? `0 0 0 3px #b040a0, 0 4px 16px ${color}80`
+                      : isMatched
+                        ? `0 0 18px 5px ${color}bb`
+                        : `0 2px 5px ${color}44, inset 0 1px 0 rgba(255,255,255,0.25)`,
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    fontSize: Math.round(tileSize * 0.46),
+                    lineHeight: 1,
+                    cursor: 'pointer',
+                    touchAction: 'manipulation',
+                    userSelect: 'none',
+                    transition: 'transform 0.1s, box-shadow 0.12s, opacity 0.12s',
+                    transform: isMatched
+                      ? 'scale(1.18)'
+                      : isSelected
+                        ? 'scale(1.1)'
+                        : 'scale(1)',
+                    opacity: isMatched ? 0.8 : 1,
+                    willChange: 'transform',
+                  }}
+                >
+                  {CATEGORY_EMOJI[cell?.category]}
+                </div>
+              )
+            })
+          )}
+        </div>
       </div>
 
       {sparkles.map(s => (
